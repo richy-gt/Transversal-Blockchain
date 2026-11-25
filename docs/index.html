@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acuerdo de Exportación · DApp</title>
+<style>
+:root{--ink:#16141C;--paper:#F6F1E7;--card:#FBF8F1;--line:#D9CFBA;--wine:#7A1F3D;--amber:#E3B45C;--teal:#1F6F6B;--mute:#5B5566;--bad:#A3262F;--ok:#1F6F4A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--ink);color:var(--paper);padding:20px 16px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+header .wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+h1{font:700 22px/1.2 Georgia,serif;margin:0}
+h2{font:700 18px/1.2 Georgia,serif;margin:0 0 12px}
+main{padding:20px 0 48px}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:860px){.grid{grid-template-columns:1fr 1fr}.full{grid-column:1/-1}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:9px 14px;background:var(--wine);color:#fff;cursor:pointer}
+button.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;width:100%;background:#fff}
+label{font-size:13px;color:var(--mute);display:block;margin:8px 0 3px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:13px;font-weight:600;background:#EBE3D3;color:var(--ink)}
+.chip.on{background:var(--teal);color:#fff}
+.chip.warn{background:var(--bad);color:#fff}
+.addr{font:13px ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{color:var(--mute);width:42%}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;padding:0;list-style:none}
+.steps li{padding:5px 10px;border-radius:8px;background:#EBE3D3;font-size:13px;font-weight:600;color:var(--mute)}
+.steps li.done{background:#CFE3D8;color:var(--ok)}
+.steps li.cur{background:var(--wine);color:#fff}
+.actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.actions button{width:100%;text-align:left}
+.log{max-height:300px;overflow:auto;font-size:14px}
+.log div{padding:5px 0;border-bottom:1px solid var(--line)}
+#msg{position:sticky;top:0;z-index:5;margin:0 0 16px;padding:10px 14px;border-radius:10px;display:none;font-weight:600}
+#msg.ok{display:block;background:#CFE3D8;color:var(--ok)}
+#msg.err{display:block;background:#F3D3D5;color:var(--bad)}
+#msg.info{display:block;background:#EBE3D3}
+.hint{font-size:13px;color:var(--mute);margin:6px 0 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div><h1>Acuerdo de exportación con pago en garantía</h1><div style="font-size:14px;opacity:.8">Fundamentos de Blockchain · BCY0010 · Ricardo Saez y Javier González · Sección 002D</div></div>
+  <div class="row"><span id="net" class="chip">sin conexión</span><button id="btnConnect">Conectar wallet</button></div>
+</div></header>
+<main class="wrap">
+<div id="msg" role="status" aria-live="polite"></div>
+<div class="grid">
+
+  <section class="card full" aria-labelledby="h-cfg">
+    <h2 id="h-cfg">1. Contratos</h2>
+    <div class="grid">
+      <div><label for="inAcuerdo">Dirección de AcuerdoExportacion</label><input id="inAcuerdo" placeholder="0x…" spellcheck="false"></div>
+      <div><label for="inToken">Dirección de PagoToken (se detecta sola si queda vacía)</label><input id="inToken" placeholder="0x…" spellcheck="false"></div>
+    </div>
+    <div class="row" style="margin-top:12px"><button id="btnLoad">Cargar acuerdo</button><button class="sec" id="btnRefresh">Actualizar</button></div>
+    <p class="hint">Tu wallet: <span id="me" class="addr">no conectada</span> <span id="roles"></span></p>
+  </section>
+
+  <section class="card full" aria-labelledby="h-state">
+    <h2 id="h-state">2. Estado del acuerdo</h2>
+    <ol class="steps" id="steps"></ol>
+    <div id="stateExtra" class="hint"></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-terms">
+    <h2 id="h-terms">Términos y participantes</h2>
+    <table id="tblTerms"><tr><td>—</td><td>Carga un acuerdo</td></tr></table>
+  </section>
+
+  <section class="card" aria-labelledby="h-trace">
+    <h2 id="h-trace">Trazabilidad, firmas y DAO</h2>
+    <table id="tblTrace"><tr><td>—</td><td>Carga un acuerdo</td></tr></table>
+  </section>
+
+  <section class="card full" aria-labelledby="h-act">
+    <h2 id="h-act">3. Acciones (solo se habilitan las de tu rol y etapa)</h2>
+    <div class="actions" id="actions"></div>
+    <div class="grid" style="margin-top:12px">
+      <div><label for="inTemp">Oráculo: temperatura en °C</label><input id="inTemp" type="number" step="0.1" value="7.2"></div>
+      <div><label for="inMint">Demo: entregar USDm al importador (solo owner del token)</label><div class="row"><input id="inMint" type="number" value="12500" style="flex:1"><button class="sec" id="btnMint">Emitir USDm</button></div></div>
+    </div>
+  </section>
+
+  <section class="card full" aria-labelledby="h-log">
+    <h2 id="h-log">4. Historial on-chain (eventos)</h2>
+    <div class="log" id="log"><div>Sin eventos.</div></div>
+  </section>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.17.0/dist/ethers.umd.min.js"></script>
+<script>
+"use strict";
+const ESTADOS=["Creado","Firmado","Financiado","EnTransito","Entregado","Pagado","EnDisputa","Reembolsado","Cancelado"];
+const RUTA=[0,1,2,3,4,5];
+const ABI_ACUERDO=[
+ "function estado() view returns (uint8)","function exportador() view returns (address)","function importador() view returns (address)",
+ "function transportista() view returns (address)","function oraculo() view returns (address)","function arbitros(uint256) view returns (address)",
+ "function token() view returns (address)","function producto() view returns (string)","function cantidadCajas() view returns (uint32)",
+ "function precio() view returns (uint256)","function temperaturaMaxDecimas() view returns (int16)","function fechaLimiteEntrega() view returns (uint64)",
+ "function hashTerminos() view returns (bytes32)","function firmo(address) view returns (bool)","function ultimaTemperaturaDecimas() view returns (int16)",
+ "function maximaTemperaturaDecimas() view returns (int16)","function totalLecturas() view returns (uint32)","function incumplimientoTermico() view returns (bool)",
+ "function fechaEntrega() view returns (uint64)","function esArbitro(address) view returns (bool)","function yaVoto(address) view returns (bool)",
+ "function votosImportador() view returns (uint8)","function votosExportador() view returns (uint8)","function saldoEnGarantia() view returns (uint256)",
+ "function firmar(bytes32)","function depositarPago()","function iniciarTransito()","function reportarTemperatura(int16)","function registrarEntrega()",
+ "function confirmarRecepcion()","function reclamarPago()","function reclamarReembolso()","function abrirDisputa()","function votar(bool)","function cancelar()",
+ "event Firmado(address indexed firmante, bytes32 hashTerminos, uint64 fecha)","event Financiado(address indexed importador, uint256 monto)",
+ "event TransitoIniciado(address indexed transportista, uint64 fecha)","event LecturaTemperatura(address indexed oraculo, int16 decimas, bool excede, uint32 numero)",
+ "event Entregado(address indexed transportista, uint64 fecha)","event PagoLiberado(address indexed exportador, uint256 monto)",
+ "event DisputaAbierta(address indexed quienAbre)","event Voto(address indexed arbitro, bool aFavorImportador)",
+ "event Reembolsado(address indexed importador, uint256 monto)","event Cancelado(address indexed quien)"];
+const ABI_TOKEN=["function balanceOf(address) view returns (uint256)","function allowance(address,address) view returns (uint256)",
+ "function approve(address,uint256) returns (bool)","function mint(address,uint256)","function owner() view returns (address)","function symbol() view returns (string)"];
+
+const $=id=>document.getElementById(id);
+let provider,signer,me=null,acuerdo=null,token=null,S=null,iface=null;
+
+function msg(text,kind){const m=$("msg");m.className=kind;m.textContent=text}
+function short(a){return a.slice(0,6)+"…"+a.slice(-4)}
+function same(a,b){return a&&b&&a.toLowerCase()===b.toLowerCase()}
+function usd(v){return Number(ethers.formatUnits(v,6)).toLocaleString("es-CL")+" USDm"}
+function grados(d){return (Number(d)/10).toFixed(1).replace(".",",")+" °C"}
+function errText(e){return e?.reason||e?.shortMessage||e?.info?.error?.message||e?.message||String(e)}
+
+async function connect(){
+  if(!window.ethereum){msg("No se detectó MetaMask. Instálalo para usar la DApp.","err");return}
+  try{
+    provider=new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts",[]);
+    signer=await provider.getSigner();me=await signer.getAddress();
+    const net=await provider.getNetwork();
+    $("net").textContent=(net.chainId===11155111n?"Sepolia":"Red "+net.chainId);
+    $("net").className="chip "+(net.chainId===11155111n?"on":"");
+    $("btnConnect").textContent="Conectado";
+    msg("Wallet conectada: "+short(me),"ok");
+    if(acuerdo)await loadContracts();
+    else await render();
+  }catch(e){msg("No se pudo conectar: "+errText(e),"err")}
+}
+async function loadContracts(){
+  const a=$("inAcuerdo").value.trim();
+  if(!ethers.isAddress(a)){msg("Ingresa una dirección de contrato válida.","err");return}
+  if(!provider){await connect();if(!provider)return}
+  try{
+    acuerdo=new ethers.Contract(a,ABI_ACUERDO,signer);iface=acuerdo.interface;
+    let t=$("inToken").value.trim();if(!ethers.isAddress(t))t=await acuerdo.token();
+    $("inToken").value=t;token=new ethers.Contract(t,ABI_TOKEN,signer);
+    try{localStorage.setItem("acuerdo",a)}catch(_){}
+    await render();msg("Acuerdo cargado.","ok");
+  }catch(e){acuerdo=null;msg("No se pudo leer ese contrato (¿red equivocada?): "+errText(e),"err")}
+}
+async function readState(){
+  const c=acuerdo,arb=[await c.arbitros(0),await c.arbitros(1),await c.arbitros(2)];
+  const s={estado:Number(await c.estado()),exp:await c.exportador(),imp:await c.importador(),tra:await c.transportista(),ora:await c.oraculo(),arb,
+    producto:await c.producto(),cajas:await c.cantidadCajas(),precio:await c.precio(),tmax:await c.temperaturaMaxDecimas(),limite:await c.fechaLimiteEntrega(),
+    hash:await c.hashTerminos(),ult:await c.ultimaTemperaturaDecimas(),max:await c.maximaTemperaturaDecimas(),lect:await c.totalLecturas(),
+    incumple:await c.incumplimientoTermico(),entrega:await c.fechaEntrega(),vImp:await c.votosImportador(),vExp:await c.votosExportador(),
+    garantia:await c.saldoEnGarantia()};
+  s.firmoExp=await c.firmo(s.exp);s.firmoImp=await c.firmo(s.imp);
+  if(me){s.miFirmo=await c.firmo(me);s.miVoto=await c.yaVoto(me);s.esArb=await c.esArbitro(me);}
+  return s;
+}
+async function render(){
+  if(!acuerdo){return}
+  S=await readState();
+  // roles
+  const R=roles();
+  $("me").textContent=me?short(me):"no conectada";
+  $("roles").innerHTML=Object.entries(R).filter(([k,v])=>v).map(([k])=>`<span class="chip on">${k}</span>`).join(" ")||(me?'<span class="chip">sin rol en este acuerdo</span>':"");
+  // stepper
+  $("steps").innerHTML=RUTA.map(i=>`<li class="${i===S.estado?"cur":i<S.estado&&S.estado<=5?"done":""}">${ESTADOS[i]}</li>`).join("");
+  $("stateExtra").innerHTML=S.estado>5?`Estado final: <span class="chip ${S.estado===6?"":"warn"}">${ESTADOS[S.estado]}</span>`:"";
+  const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`,ad=a=>`<span class="addr">${a}</span>`;
+  $("tblTerms").innerHTML=row("Producto",`${S.producto} · ${S.cajas} cajas`)+row("Precio",usd(S.precio))+row("Temperatura máxima",grados(S.tmax))+
+   row("Plazo de entrega",new Date(Number(S.limite)*1000).toLocaleString("es-CL"))+row("Hash de términos",ad(S.hash))+
+   row("Exportador",ad(S.exp))+row("Importador",ad(S.imp))+row("Transportista",ad(S.tra))+row("Oráculo",ad(S.ora))+row("Árbitros",S.arb.map(ad).join("<br>"));
+  $("tblTrace").innerHTML=row("Firma exportador",S.firmoExp?"✔ firmó":"pendiente")+row("Firma importador",S.firmoImp?"✔ firmó":"pendiente")+
+   row("Pago en garantía",usd(S.garantia))+row("Lecturas del oráculo",String(S.lect))+row("Última temperatura",S.lect>0n?grados(S.ult):"—")+
+   row("Máxima registrada",S.lect>0n?grados(S.max):"—")+row("Cadena de frío",S.incumple?'<span class="chip warn">incumplida</span>':'<span class="chip on">sin incumplimientos</span>')+
+   row("Votos DAO",`a favor importador: ${S.vImp} · a favor exportador: ${S.vExp}`);
+  renderActions(R);
+  await renderLog();
+}
+function roles(){
+  if(!me||!S)return{};
+  return{Exportador:same(me,S.exp),Importador:same(me,S.imp),Transportista:same(me,S.tra),Oráculo:same(me,S.ora),Árbitro:!!S.esArb};
+}
+function renderActions(R){
+  const e=S?S.estado:-1,noInc=S?!S.incumple:false;
+  const A=[
+   ["Firmar términos",(R.Exportador||R.Importador)&&e===0&&!S.miFirmo,"firmar"],
+   ["Aprobar y depositar pago",R.Importador&&e===1,"depositar"],
+   ["Iniciar tránsito",R.Transportista&&e===2,"iniciarTransito"],
+   ["Reportar temperatura (oráculo)",R.Oráculo&&e===3,"temp"],
+   ["Registrar entrega",R.Transportista&&e===3,"registrarEntrega"],
+   ["Confirmar recepción y pagar",R.Importador&&e===4&&noInc,"confirmarRecepcion"],
+   ["Reclamar pago (tras 3 días)",R.Exportador&&e===4&&noInc,"reclamarPago"],
+   ["Reclamar reembolso (plazo vencido)",R.Importador&&(e===2||e===3),"reclamarReembolso"],
+   ["Abrir disputa",(R.Importador||R.Exportador)&&(e===3||e===4),"abrirDisputa"],
+   ["Votar: a favor del importador",R.Árbitro&&e===6&&!S.miVoto,"votoImp"],
+   ["Votar: a favor del exportador",R.Árbitro&&e===6&&!S.miVoto,"votoExp"],
+   ["Cancelar acuerdo",(R.Exportador||R.Importador)&&e<=1,"cancelar"]];
+  $("actions").innerHTML="";
+  A.forEach(([label,on,key])=>{const b=document.createElement("button");b.textContent=label;b.disabled=!on||!me;
+    b.title=on?"":"No disponible para tu rol o para la etapa actual";b.addEventListener("click",()=>run(key));$("actions").appendChild(b)});
+}
+async function run(key){
+  try{
+    msg("Confirma la transacción en tu wallet…","info");
+    let tx;
+    if(key==="firmar")tx=await acuerdo.firmar(S.hash);
+    else if(key==="depositar"){
+      const need=S.precio,al=await token.allowance(me,await acuerdo.getAddress());
+      if(al<need){msg("Paso 1 de 2: aprobar el token…","info");await (await token.approve(await acuerdo.getAddress(),need)).wait()}
+      msg("Paso 2 de 2: depositar el pago…","info");tx=await acuerdo.depositarPago();
+    }
+    else if(key==="temp"){const d=Math.round(parseFloat($("inTemp").value)*10);if(Number.isNaN(d))throw new Error("Temperatura inválida");tx=await acuerdo.reportarTemperatura(d)}
+    else if(key==="votoImp")tx=await acuerdo.votar(true);
+    else if(key==="votoExp")tx=await acuerdo.votar(false);
+    else tx=await acuerdo[key]();
+    msg("Transacción enviada, esperando confirmación…","info");
+    const r=await tx.wait();
+    await render();
+    msg("Confirmada en el bloque "+r.blockNumber+" ("+short(r.hash)+")","ok");
+  }catch(e){msg("Error: "+errText(e),"err")}
+}
+async function mint(){
+  try{
+    if(!token||!S)throw new Error("Carga primero un acuerdo");
+    const v=ethers.parseUnits(String($("inMint").value||"0"),6);
+    msg("Confirma la emisión en tu wallet…","info");
+    await (await token.mint(S.imp,v)).wait();msg("USDm entregados al importador.","ok");
+  }catch(e){msg("Error: "+errText(e),"err")}
+}
+const ETQ={Firmado:"Firma",Financiado:"Pago depositado en garantía",TransitoIniciado:"Tránsito iniciado",LecturaTemperatura:"Lectura de temperatura",
+ Entregado:"Entrega registrada",PagoLiberado:"Pago liberado al exportador",DisputaAbierta:"Disputa abierta",Voto:"Voto de árbitro",Reembolsado:"Reembolso al importador",Cancelado:"Acuerdo cancelado"};
+async function renderLog(){
+  try{
+    const logs=await provider.getLogs({address:await acuerdo.getAddress(),fromBlock:0,toBlock:"latest"});
+    const out=logs.map(l=>{try{return{l,p:iface.parseLog(l)}}catch(_){return null}}).filter(Boolean).map(({l,p})=>{
+      let d="";const a=p.args;
+      if(p.name==="LecturaTemperatura")d=`${grados(a.decimas)}${a.excede?" (excede el máximo)":""}`;
+      else if(["Financiado","PagoLiberado","Reembolsado"].includes(p.name))d=usd(a[1]);
+      else if(p.name==="Voto")d=a.aFavorImportador?"a favor del importador":"a favor del exportador";
+      const who=a[0]&&typeof a[0]==="string"?" · "+short(a[0]):"";
+      return `<div>#${l.blockNumber} <b>${ETQ[p.name]||p.name}</b>${who} ${d}</div>`}).reverse();
+    $("log").innerHTML=out.join("")||"<div>Sin eventos.</div>";
+  }catch(e){$("log").innerHTML="<div>No se pudo leer el historial: "+errText(e)+"</div>"}
+}
+
+$("btnConnect").addEventListener("click",connect);
+$("btnLoad").addEventListener("click",loadContracts);
+$("btnRefresh").addEventListener("click",()=>acuerdo?render():msg("Carga un acuerdo primero.","info"));
+$("btnMint").addEventListener("click",mint);
+if(window.ethereum){
+  window.ethereum.on?.("accountsChanged",async()=>{if(provider){signer=await provider.getSigner();me=await signer.getAddress();acuerdo&&(acuerdo=acuerdo.connect(signer),token=token.connect(signer));await render()}});
+  window.ethereum.on?.("chainChanged",()=>location.reload());
+}
+(function init(){
+  const q=new URLSearchParams(location.search);let a=q.get("acuerdo");
+  if(!a){try{a=localStorage.getItem("acuerdo")}catch(_){}}
+  if(a)$("inAcuerdo").value=a;
+  if(q.get("token"))$("inToken").value=q.get("token");
+  renderActions({});
+})();
+</script>
+</body>
+</html>

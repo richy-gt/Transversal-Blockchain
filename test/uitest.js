@@ -1,0 +1,52 @@
+const ganache=require('ganache'),{ethers}=require('ethers'),fs=require('fs'),assert=require('assert');
+const {chromium}=require(require('child_process').execSync('npm root -g').toString().trim()+'/playwright');
+const load=n=>JSON.parse(fs.readFileSync(__dirname+`/../build/${n}.json`));
+(async()=>{
+ const srv=ganache.server({logging:{quiet:true},wallet:{totalAccounts:8,deterministic:true}});
+ await srv.listen(8545);
+ const prov=new ethers.JsonRpcProvider('http://127.0.0.1:8545');
+ const acc=(await prov.listAccounts()).map(a=>a.address);
+ const [dep,exp,imp,tra,ora,a1,a2,a3]=await Promise.all(acc.map((_,i)=>prov.getSigner(i)));
+ const T=load('PagoToken'),A=load('AcuerdoExportacion');
+ const token=await new ethers.ContractFactory(T.abi,T.bytecode,dep).deploy();await token.waitForDeployment();
+ const precio=12_500n*10n**6n;
+ const limite=(await prov.getBlock('latest')).timestamp+14*86400;
+ const ac=await new ethers.ContractFactory(A.abi,A.bytecode,dep).deploy(await token.getAddress(),acc[1],acc[2],acc[3],acc[4],[acc[5],acc[6],acc[7]],'Vino Carmenere Reserva 2023',500,precio,80,limite);
+ await ac.waitForDeployment();
+ const addr=await ac.getAddress();
+ const b=await chromium.launch();const ctx=await b.newContext({viewport:{width:1200,height:1000}});const page=await ctx.newPage();
+ let cur=acc[0];
+ await page.exposeFunction('__rpc',async(m,p)=>{
+   if(m==='eth_requestAccounts'||m==='eth_accounts')return [cur];
+   const r=await fetch('http://127.0.0.1:8545',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:m,params:p})}).then(r=>r.json());
+   if(r.error)throw Object.assign(new Error(r.error.message),{code:r.error.code});return r.result});
+ await page.addInitScript(()=>{const h={};window.ethereum={request:({method,params})=>window.__rpc(method,params||[]),on:(e,f)=>{(h[e]=h[e]||[]).push(f)},removeListener(){}};window.__emit=(e)=>(h[e]||[]).forEach(f=>f())});
+ const umd=fs.readFileSync(''+require('path').dirname(require.resolve('ethers'))+'/../dist/ethers.umd.min.js');
+ await page.route('**/ethers.umd.min.js',r=>r.fulfill({body:umd,contentType:'application/javascript'}));
+ const errs=[];page.on('pageerror',e=>errs.push(e.message));
+ await page.goto('file://'+require('path').resolve(__dirname,'../docs/index.html')+'?acuerdo='+addr);
+ const as=async(i)=>{cur=acc[i];await page.evaluate(()=>window.__emit('accountsChanged'));await page.waitForTimeout(500)};
+ const click=async(t)=>{await page.getByRole('button',{name:t}).click();await page.waitForFunction(()=>/Confirmada|Error|Paso|USDm entregados/.test(document.getElementById('msg').textContent)&&!/Confirma la|esperando|Paso/.test(document.getElementById('msg').textContent),null,{timeout:20000});};
+ const st=async()=>(await page.locator('#steps li.cur').textContent())||'';
+ const msg=async()=>page.locator('#msg').textContent();
+ await page.getByRole('button',{name:'Conectar wallet'}).click();await page.waitForTimeout(500);
+ await page.getByRole('button',{name:'Cargar acuerdo'}).click();await page.waitForTimeout(1000);
+ console.log('Carga:',await msg(), '| estado:',await st());
+ // demo mint como owner (acc0)
+ await click('Emitir USDm');console.log('Mint:',await msg());
+ await as(1);await click('Firmar términos');console.log('Exportador firma ->',await st());
+ await as(2);await click('Firmar términos');console.log('Importador firma ->',await st());
+ await click('Aprobar y depositar pago');console.log('Deposito ->',await st(),'|',await msg());
+ await as(3);await click('Iniciar tránsito');console.log('Tránsito ->',await st());
+ await as(4);await page.fill('#inTemp','7.2');await click('Reportar temperatura');console.log('Temp ->',(await page.locator('#tblTrace').innerText()).replace(/\s+/g,' ').slice(0,200));
+ await as(3);await click('Registrar entrega');console.log('Entrega ->',await st());
+ // permisos: transportista no debe poder confirmar
+ const disabled=await page.getByRole('button',{name:'Confirmar recepción y pagar'}).isDisabled();assert(disabled,'confirmar debe estar deshabilitado para transportista');
+ await as(2);await click('Confirmar recepción y pagar');console.log('Pago ->',await st());
+ const bal=await token.balanceOf(acc[1]);assert.equal(bal,precio);
+ console.log('Historial:',(await page.locator('#log').innerText()).replace(/\n+/g,' | ').slice(0,400));
+ await page.screenshot({path:__dirname+'/../ui.png',fullPage:true});
+ assert.deepEqual(errs,[]);
+ console.log('UI OK; saldo exportador =',ethers.formatUnits(bal,6));
+ await b.close();await srv.close();process.exit(0);
+})().catch(e=>{console.error('FALLO',e);process.exit(1)});

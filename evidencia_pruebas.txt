@@ -1,0 +1,44 @@
+
+=== 1. Flujo feliz (cadena de frio cumplida) ===
+Contrato: 0xCfEB869F69431e42cdB54A4F4f105C19C080A601  | hashTerminos: 0x3bf07956a0269e99...
+  tx 0x22a3adebf7...  Exportador firma (hash de terminos)    gas=72831  -> estado: Creado
+  tx 0x4f90398d95...  Importador firma -> acuerdo inicia     gas=92983  -> estado: Firmado
+  tx 0xf358ef5287...  Importador: approve token              gas=46131  -> estado: Firmado
+  tx 0x7455d50867...  Importador deposita pago en garantia   gas=74700  -> estado: Financiado
+  tx 0xcac52be662...  Transportista inicia transito          gas=28019  -> estado: EnTransito
+  tx 0x13d01675d4...  Oraculo: lectura 5,0 C                 gas=34027  -> estado: EnTransito
+  tx 0xaf8da9100c...  Oraculo: lectura 7,2 C                 gas=34027  -> estado: EnTransito
+  tx 0x8e2e71744b...  Transportista registra entrega         gas=33045  -> estado: Entregado
+  tx 0xd5cbcdff88...  Importador confirma recepcion -> paga  gas=70371  -> estado: Pagado
+  OK: exportador recibio 12.500 USDm, escrow en 0
+
+=== 2. Incumplimiento termico -> disputa DAO -> reembolso ===
+Contrato: 0xCfEB869F69431e42cdB54A4F4f105C19C080A601  | hashTerminos: 0x3bf07956a0269e99...
+  tx 0x6378f679b3...  Oraculo: lectura 11,5 C (excede 8,0)   gas=34257  -> estado: EnTransito
+  tx 0x124a427e99...  Transportista registra entrega         gas=33045  -> estado: Entregado
+  tx 0x1e9f1445bd...  Importador abre disputa                gas=27737  -> estado: EnDisputa
+  tx 0x8ee1aefb28...  Arbitro 1 vota a favor importador      gas=73009  -> estado: EnDisputa
+  tx 0x879a2263db...  Arbitro 2 vota a favor importador      gas=90792  -> estado: Reembolsado
+  OK: mayoria 2/3 ejecuto reembolso automaticamente
+
+=== 3. Disputa resuelta a favor del exportador ===
+Contrato: 0xCfEB869F69431e42cdB54A4F4f105C19C080A601  | hashTerminos: 0xa5a078af313f793b...
+  tx 0x78e66e8a75...  Exportador abre disputa                gas=27765  -> estado: EnDisputa
+  tx 0x88a5cb435e...  Arbitro 1 vota a favor exportador      gas=73108  -> estado: EnDisputa
+  tx 0x8ff9146acf...  Arbitro 2 vota a favor importador      gas=55909  -> estado: EnDisputa
+  tx 0x663bd34236...  Arbitro 3 vota a favor exportador -> paga gas=91022  -> estado: Pagado
+
+=== 4. Plazos: reclamar pago y reembolso por demora ===
+Contrato: 0xCfEB869F69431e42cdB54A4F4f105C19C080A601  | hashTerminos: 0x6a4dd2608a93af71...
+  tx 0x0b75bbced9...  Importador reclama reembolso (plazo vencido) gas=70473  -> estado: Reembolsado
+
+=== 5. Silencio del importador: exportador cobra a los 3 dias ===
+Contrato: 0xCfEB869F69431e42cdB54A4F4f105C19C080A601  | hashTerminos: 0x6a4dd2608a93af71...
+  tx 0x37c4ed391d...  Exportador reclama pago                gas=70550  -> estado: Pagado
+
+=== 6. Cancelacion antes de financiar y validaciones ===
+Contrato: 0xCfEB869F69431e42cdB54A4F4f105C19C080A601  | hashTerminos: 0x6a4dd2608a93af71...
+  tx 0x9e623f29c1...  Exportador firma                       gas=72831  -> estado: Creado
+  tx 0xe09d484c09...  Importador cancela                     gas=44842  -> estado: Cancelado
+
+TODAS LAS PRUEBAS PASARON (6 escenarios)

@@ -1,0 +1,1 @@
+{"name":"acuerdo-exportacion","version":"1.0.0","private":true,"scripts":{"compile":"node test/compile.js","test":"node test/compile.js && node test/test.js","ui":"node test/uitest.js"},"dependencies":{"ethers":"^6.13.0","ganache":"^7.9.2","solc":"0.8.26"},"devDependencies":{"playwright":"^1.48.0"}}
